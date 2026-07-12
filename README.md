@@ -103,6 +103,8 @@ printf '%s' 'YOUR_OPENAI_KEY' > ~/.openclaw/secrets/openai-api-key
 chmod 600 ~/.openclaw/secrets/*-api-key
 ```
 
+For safety, Paw Voice only accepts ElevenLabs key files from `~/.openclaw/secrets/`.
+
 If you do not have ElevenLabs yet, install with macOS speech:
 
 ```bash

@@ -13,7 +13,8 @@ const STATE_PATH = path.join(STATE_DIR, "state.json");
 const LOG_PATH = path.join(STATE_DIR, "usage.jsonl");
 const VOICE_CATALOG_PATH = path.join(STATE_DIR, "voice-catalog.json");
 const VOICE_RATINGS_PATH = path.join(STATE_DIR, "voice-ratings.json");
-const DEFAULT_KEY_FILE = path.join(os.homedir(), ".openclaw", "secrets", "elevenlabs-api-key");
+const SECRETS_DIR = path.join(os.homedir(), ".openclaw", "secrets");
+const DEFAULT_KEY_FILE = path.join(SECRETS_DIR, "elevenlabs-api-key");
 const DEFAULT_MODEL = "eleven_flash_v2_5";
 const DEFAULT_VOICE = process.env.ELEVENLABS_VOICE_ID || process.env.PAW_VOICE || "Sarah";
 const DEFAULT_VOICE_ROTATION = ["Sarah", "River", "Matilda"];
@@ -192,26 +193,85 @@ function hasSensitiveText(text) {
   return sensitivePatterns.some((pattern) => pattern.test(text));
 }
 
+function expandHome(filePath) {
+  if (!filePath) return null;
+  if (filePath === "~") return os.homedir();
+  if (filePath.startsWith("~/")) return path.join(os.homedir(), filePath.slice(2));
+  return filePath;
+}
+
+function isInsideDirectory(filePath, directory) {
+  const resolvedFile = path.resolve(filePath);
+  const resolvedDirectory = path.resolve(directory);
+  const relative = path.relative(resolvedDirectory, resolvedFile);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+function configuredKeyFile(state) {
+  const rawPath = process.env.ELEVENLABS_API_KEY_FILE || state.api_key_file || DEFAULT_KEY_FILE;
+  const keyFile = path.resolve(expandHome(rawPath));
+  if (!isInsideDirectory(keyFile, SECRETS_DIR)) return null;
+  return keyFile;
+}
+
+function isValidElevenLabsKey(value) {
+  return /^[A-Za-z0-9_-]{20,200}$/.test(String(value || "").trim());
+}
+
+function safeElevenLabsApiKey(state) {
+  const envKey = process.env.ELEVENLABS_API_KEY?.trim();
+  if (envKey) return isValidElevenLabsKey(envKey) ? envKey : null;
+
+  const keyFile = configuredKeyFile(state);
+  if (!keyFile || !fs.existsSync(keyFile)) return null;
+
+  const stat = fs.statSync(keyFile);
+  if (!stat.isFile() || stat.size > 1024) return null;
+
+  const key = fs.readFileSync(keyFile, "utf8").trim();
+  return isValidElevenLabsKey(key) ? key : null;
+}
+
+function hasConfiguredElevenLabsKeySource(state) {
+  if (process.env.ELEVENLABS_API_KEY) return isValidElevenLabsKey(process.env.ELEVENLABS_API_KEY);
+  const keyFile = configuredKeyFile(state);
+  return Boolean(keyFile && fs.existsSync(keyFile) && fs.statSync(keyFile).isFile());
+}
+
+function publicStatus(state) {
+  return {
+    enabled: state.enabled,
+    quiet_until: state.quiet_until,
+    quiet_hours: state.quiet_hours,
+    mode: state.mode,
+    max_chars: state.max_chars,
+    voice: state.voice,
+    alternate_voice: state.alternate_voice,
+    voice_mode: state.voice_mode,
+    voice_rotation_count: Array.isArray(state.voice_rotation) ? state.voice_rotation.length : 0,
+    voice_rotation_index: state.voice_rotation_index,
+    audition_mode: state.audition_mode,
+    last_voice: state.last_voice,
+    model: state.model,
+    api_key_configured: hasConfiguredElevenLabsKeySource(state),
+    api_key_file: configuredKeyFile(state) ? "configured" : null
+  };
+}
+
 function hasElevenLabsKey() {
   const state = readState();
-  return Boolean(
-    process.env.ELEVENLABS_API_KEY ||
-    process.env.ELEVENLABS_API_KEY_FILE ||
-    (state.api_key_file && fs.existsSync(state.api_key_file))
-  );
+  return Boolean(safeElevenLabsApiKey(state));
 }
 
 function sagAuthArgs(state) {
-  if (process.env.ELEVENLABS_API_KEY || process.env.ELEVENLABS_API_KEY_FILE) return [];
-  if (state.api_key_file && fs.existsSync(state.api_key_file)) return ["--api-key-file", state.api_key_file];
+  if (process.env.ELEVENLABS_API_KEY) return [];
+  const keyFile = configuredKeyFile(state);
+  if (keyFile && fs.existsSync(keyFile)) return ["--api-key-file", keyFile];
   return [];
 }
 
 function elevenLabsApiKey(state) {
-  if (process.env.ELEVENLABS_API_KEY) return process.env.ELEVENLABS_API_KEY.trim();
-  const keyFile = process.env.ELEVENLABS_API_KEY_FILE || state.api_key_file;
-  if (keyFile && fs.existsSync(keyFile)) return fs.readFileSync(keyFile, "utf8").trim();
-  return null;
+  return safeElevenLabsApiKey(state);
 }
 
 function appendLog(entry) {
@@ -510,7 +570,7 @@ function setAuditionMode(mode) {
 
 switch (command) {
   case "status":
-    console.log(JSON.stringify(readState(), null, 2));
+    console.log(JSON.stringify(publicStatus(readState()), null, 2));
     break;
   case "on": {
     const state = readState();

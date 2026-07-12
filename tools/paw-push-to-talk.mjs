@@ -420,12 +420,17 @@ function status() {
   const lock = readLock();
   const locked = Boolean(lock && isPidRunning(lock.pid));
   const visibleLock = locked ? lock : null;
+  const publicModes = Object.fromEntries(Object.entries(MODES).map(([name, mode]) => [name, {
+    duration: mode.duration,
+    model: "configured",
+    label: mode.label
+  }]));
   const result = {
     ok: fs.existsSync(PAW_LISTEN) && haveBin("node") && haveBin("openclaw") && haveBin("whisper") && haveBin("ffmpeg"),
-    wrapper: path.join(WORKSPACE, "tools", "paw-push-to-talk.mjs"),
-    paw_listen: PAW_LISTEN,
-    state_dir: STATE_DIR,
-    lock_file: LOCK_FILE,
+    wrapper: "configured",
+    paw_listen: "configured",
+    state_dir: "configured",
+    lock_file: "configured",
     locked,
     lock: visibleLock,
     stale_lock: Boolean(lock && !locked),
@@ -453,7 +458,7 @@ function status() {
       fresh_voice_session_key: "configured",
       session_key: "configured"
     },
-    modes: MODES,
+    modes: publicModes,
     bins: {
       node: haveBin("node"),
       openclaw: haveBin("openclaw"),
