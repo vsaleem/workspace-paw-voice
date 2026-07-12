@@ -11,6 +11,7 @@ on:
 permissions:
   actions: read
   contents: read
+  pull-requests: read
   security-events: write
 
 env:
@@ -37,6 +38,16 @@ jobs:
           queries: security-and-quality
 
       - name: Perform CodeQL Analysis
+        id: analyze
         uses: github/codeql-action/analyze@v4
         with:
           category: "/language:javascript-typescript"
+          output: codeql-results
+          upload: ${{ vars.PAW_CODEQL_UPLOAD || 'never' }}
+
+      - name: Upload CodeQL SARIF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: codeql-sarif
+          path: codeql-results
+          if-no-files-found: warn

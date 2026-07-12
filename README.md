@@ -295,6 +295,10 @@ Paw Voice includes a small GitHub Actions safety net inspired by OpenClaw's larg
 - 📦 `Dependency Review`: checks pull-request dependency changes for known vulnerabilities and disallowed licenses.
 - 🧭 `Workflow Sanity`: lints workflow YAML with actionlint and requires explicit workflow permissions.
 
+By default, CodeQL runs in artifact mode: it scans the repo and uploads SARIF as a workflow artifact named `codeql-sarif`, but it does not upload to GitHub code scanning. This keeps forks and private repos green even before GitHub Code Security is enabled.
+
+To show CodeQL alerts in the repository Security tab, enable code scanning / GitHub Code Security for the repo, then set repository variable `PAW_CODEQL_UPLOAD=always`.
+
 ## 🚧 Product Boundaries
 
 Paw Voice V1 is a macOS push-to-talk interface. It does not yet include Voice Wake, continuous conversation, cross-platform recording, or a signed packaged app. Those are V2/productization tracks, not V1 promises.
