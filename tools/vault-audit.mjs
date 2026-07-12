@@ -146,7 +146,6 @@ function auditVault() {
 
   const allFiles = walk(vaultRoot);
   const markdownFiles = allFiles.filter((file) => isMarkdown(file) && !isHiddenOrConfig(file));
-  const markdownSet = new Set(markdownFiles);
   const rootOverview = path.join(vaultRoot, "Paw Memory Overview.md");
   if (!fs.existsSync(rootOverview)) issues.push("Missing root Paw Memory Overview.md");
 

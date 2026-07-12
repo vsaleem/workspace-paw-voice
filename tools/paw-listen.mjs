@@ -243,17 +243,6 @@ function updateVoiceTask(id, patch) {
   return state.tasks[index];
 }
 
-function voiceTaskFromStatusFile(statusPath) {
-  const base = statusPath.replace(/\.status\.json$/, "");
-  return {
-    id: path.basename(base),
-    status_path: statusPath,
-    stdout_path: `${base}.out.log`,
-    stderr_path: `${base}.err.log`,
-    message_path: `${base}.txt`
-  };
-}
-
 function syncVoiceTasks() {
   const state = readVoiceTasks();
   let changed = false;
@@ -430,10 +419,11 @@ function introductionReply(transcript) {
 function status() {
   const resolvedDevice = resolveInputDevice(DEFAULT_DEVICE, { quiet: true });
   const tasks = syncVoiceTasks().tasks;
+  const latestTask = tasks[tasks.length - 1] || null;
   const result = {
     ok: true,
-    workspace: WORKSPACE,
-    state_dir: STATE_DIR,
+    workspace: "configured",
+    state_dir: "configured",
     bins: {
       ffmpeg: haveBin("ffmpeg"),
       whisper: haveBin("whisper"),
@@ -441,33 +431,44 @@ function status() {
       openclaw: fs.existsSync(OPENCLAW_BIN) || haveBin("openclaw"),
       node: haveBin("node")
     },
-    openclaw_bin: OPENCLAW_BIN,
+    openclaw_bin: "configured",
     defaults: {
-      model: DEFAULT_MODEL,
-      stt_provider: DEFAULT_STT_PROVIDER,
-      hosted_stt_model: DEFAULT_HOSTED_MODEL || null,
-      language: DEFAULT_LANGUAGE,
-      device: DEFAULT_DEVICE,
-      resolved_device: resolvedDevice,
-      agent: DEFAULT_AGENT,
-      agent_thinking: DEFAULT_AGENT_THINKING || null,
+      model: "configured",
+      stt_provider: "configured",
+      hosted_stt_model: DEFAULT_HOSTED_MODEL ? "configured" : null,
+      language: "configured",
+      device: "configured",
+      resolved_device: resolvedDevice ? "configured" : null,
+      agent: "configured",
+      agent_thinking: DEFAULT_AGENT_THINKING ? "configured" : null,
       voice_brief: DEFAULT_VOICE_BRIEF,
       voice_max_words: DEFAULT_VOICE_MAX_WORDS,
-      speech_mode: DEFAULT_SPEECH_MODE,
+      speech_mode: "configured",
       fast_reply: DEFAULT_FAST_REPLY,
       lean_commands: DEFAULT_LEAN_COMMANDS,
       instant_ack: DEFAULT_INSTANT_ACK,
-      instant_ack_text: DEFAULT_INSTANT_ACK_TEXT,
-      voice_session_key: VOICE_SESSION_KEY,
-      main_session_key: MAIN_SESSION_KEY,
-      long_task_session_key: LONG_TASK_SESSION_KEY,
-      long_task_timeout_seconds: DEFAULT_LONG_TASK_TIMEOUT,
+      instant_ack_text: "configured",
+      voice_session_key: "configured",
+      main_session_key: "configured",
+      long_task_session_key: "configured",
+      long_task_timeout_seconds: "configured",
       task_completion_speak: DEFAULT_TASK_COMPLETION_SPEAK
     },
     voice_tasks: {
       count: tasks.length,
       active: tasks.filter((task) => task.status === "running" || task.status === "queued").length,
-      latest: tasks[tasks.length - 1] || null
+      latest: latestTask ? {
+        id: latestTask.id,
+        status: latestTask.status,
+        command: latestTask.command,
+        created_at: latestTask.created_at,
+        updated_at: latestTask.updated_at,
+        completed_at: latestTask.completed_at || null,
+        exit_status: latestTask.exit_status ?? null,
+        signal: latestTask.signal || null,
+        error: latestTask.error ? "configured" : null,
+        result_preview: latestTask.result_preview ? "available" : null
+      } : null
     }
   };
   result.ok = Object.values(result.bins).every(Boolean);

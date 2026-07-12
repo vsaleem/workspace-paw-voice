@@ -77,8 +77,8 @@ Behavior:
   - Sends the transcript to Paw through OpenClaw.
   - Speaks the reply through Bella unless --no-speak is used.
   - Uses minimal model thinking and a short spoken-reply instruction by default.
-  - Routes to the sticky isolated voice session by default: ${VOICE_SESSION_KEY}
-  - Use --target fresh for disposable diagnostic sessions: ${VOICE_SESSION_KEY}:<run-id>
+  - Routes to the sticky isolated voice session by default.
+  - Use --target fresh for disposable diagnostic sessions.
   - Use --target main only when deliberately testing same-session continuity.
   - Does not log transcript text.
   - Uses a lock file to prevent duplicate overlapping recordings.
@@ -431,27 +431,27 @@ function status() {
     stale_lock: Boolean(lock && !locked),
     defaults: {
       duration_seconds: DEFAULT_DURATION,
-      whisper_model: DEFAULT_MODEL,
-      stt_provider: DEFAULT_STT_PROVIDER,
-      stt_model: DEFAULT_STT_MODEL,
-      device: DEFAULT_DEVICE,
-      agent: DEFAULT_AGENT,
-      agent_thinking: DEFAULT_AGENT_THINKING || null,
+      whisper_model: "configured",
+      stt_provider: "configured",
+      stt_model: "configured",
+      device: "configured",
+      agent: "configured",
+      agent_thinking: DEFAULT_AGENT_THINKING ? "configured" : null,
       voice_brief: DEFAULT_VOICE_BRIEF,
       voice_max_words: DEFAULT_VOICE_MAX_WORDS,
-      speech_mode: DEFAULT_SPEECH_MODE,
+      speech_mode: "configured",
       fast_reply: DEFAULT_FAST_REPLY,
       lean_commands: DEFAULT_LEAN_COMMANDS,
       instant_ack: DEFAULT_INSTANT_ACK,
-      instant_ack_text: DEFAULT_INSTANT_ACK_TEXT,
-      agent_timeout_seconds: DEFAULT_AGENT_TIMEOUT,
+      instant_ack_text: "configured",
+      agent_timeout_seconds: "configured",
       start_delay_ms: START_DELAY_MS,
-      cues: CUES,
-      target: DEFAULT_TARGET,
-      main_session_key: MAIN_SESSION_KEY,
-      voice_session_key: VOICE_SESSION_KEY,
-      fresh_voice_session_key: `${VOICE_SESSION_KEY}:<fresh-per-run>`,
-      session_key: DEFAULT_SESSION_KEY || resolveSessionKey({ target: DEFAULT_TARGET, sessionKey: DEFAULT_SESSION_KEY })
+      cues: "configured",
+      target: "configured",
+      main_session_key: "configured",
+      voice_session_key: "configured",
+      fresh_voice_session_key: "configured",
+      session_key: "configured"
     },
     modes: MODES,
     bins: {
@@ -524,22 +524,22 @@ function run(options) {
   if (options.dryRun) {
     console.log(JSON.stringify({
       command: "node",
-      args: [PAW_LISTEN, ...listenArgs],
+      args: ["tools/paw-listen.mjs", ...listenArgs.map((arg) => arg === options.file ? "<audio-file>" : arg)],
       mode: options.mode,
       target: options.target,
-      session_key: options.sessionKey,
+      session_key: options.sessionKey ? "configured" : null,
       duration_seconds: options.duration,
-      transcription_model: options.model,
-      stt_provider: options.sttProvider,
-      stt_model: options.sttModel,
-      agent_thinking: options.agentThinking || null,
+      transcription_model: "configured",
+      stt_provider: "configured",
+      stt_model: "configured",
+      agent_thinking: options.agentThinking ? "configured" : null,
       voice_brief: options.voiceBrief,
       voice_max_words: options.voiceMaxWords,
-      speech_mode: options.speechMode,
+      speech_mode: "configured",
       fast_reply: options.fastReply,
       lean_commands: options.leanCommands,
       instant_ack: options.instantAck,
-      instant_ack_text: options.instantAckText,
+      instant_ack_text: "configured",
       notifications: options.notify,
       sound_cues: options.sound,
       lock: options.lock
