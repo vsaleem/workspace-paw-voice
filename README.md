@@ -285,6 +285,16 @@ rg -n "sk-|ELEVENLABS_API_KEY|DEEPGRAM_API_KEY|OPENAI_API_KEY|/Users/" .
 
 Review any match before committing.
 
+## ✅ GitHub Safety Workflows
+
+Paw Voice includes a small GitHub Actions safety net inspired by OpenClaw's larger CI/security workflow set:
+
+- 🧪 `Paw Voice CI`: checks Node syntax, shell syntax, Go formatting/tests, SVG validity, macOS Swift typechecks, native app build, and release archive contents.
+- 🛡️ `Paw Voice Safety`: blocks tracked private/runtime files, scans for obvious secrets and local machine paths, runs Gitleaks, and verifies the release archive stays clean.
+- 🔎 `CodeQL`: runs GitHub CodeQL security-and-quality analysis for JavaScript tooling.
+- 📦 `Dependency Review`: checks pull-request dependency changes for known vulnerabilities and disallowed licenses.
+- 🧭 `Workflow Sanity`: lints workflow YAML with actionlint and requires explicit workflow permissions.
+
 ## 🚧 Product Boundaries
 
 Paw Voice V1 is a macOS push-to-talk interface. It does not yet include Voice Wake, continuous conversation, cross-platform recording, or a signed packaged app. Those are V2/productization tracks, not V1 promises.

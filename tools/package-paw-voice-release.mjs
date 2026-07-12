@@ -14,6 +14,11 @@ const ARCHIVE = path.join(DIST_DIR, `paw-voice-${VERSION}.tar.gz`);
 const SOURCE_FILES = [
   ".gitignore",
   "README.md",
+  ".github/workflows/codeql.yml",
+  ".github/workflows/dependency-review.yml",
+  ".github/workflows/paw-voice-ci.yml",
+  ".github/workflows/paw-voice-safety.yml",
+  ".github/workflows/workflow-sanity.yml",
   "assets/gng-paw-voice-logo.svg",
   "tools/PAW_PUSH_TO_TALK_SHORTCUTS.md",
   "tools/build-paw-push-to-talk-app.mjs",

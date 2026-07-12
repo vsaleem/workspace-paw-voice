@@ -1,0 +1,61 @@
+name: Workflow Sanity
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: workflow-sanity-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  workflow-sanity:
+    name: Workflow Sanity
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fail on tabs in workflow files
+        run: |
+          set -euo pipefail
+          if grep -R $'\t' .github/workflows; then
+            echo "::error::Tabs found in workflow files."
+            exit 1
+          fi
+
+      - name: Install actionlint
+        run: |
+          set -euo pipefail
+          version="1.7.7"
+          archive="actionlint_${version}_linux_amd64.tar.gz"
+          base_url="https://github.com/rhysd/actionlint/releases/download/v${version}"
+          curl --retry 5 --retry-delay 2 --retry-all-errors -sSfL -o "$archive" "$base_url/$archive"
+          curl --retry 5 --retry-delay 2 --retry-all-errors -sSfL -o checksums.txt "$base_url/actionlint_${version}_checksums.txt"
+          grep " ${archive}$" checksums.txt | sha256sum -c -
+          tar -xzf "$archive" actionlint
+          sudo install -m 0755 actionlint /usr/local/bin/actionlint
+
+      - name: Lint workflows
+        run: actionlint
+
+      - name: Check workflow permissions are explicit
+        run: |
+          set -euo pipefail
+          for file in .github/workflows/*.yml; do
+            if ! grep -q '^permissions:' "$file"; then
+              echo "::error file=$file::Workflow must declare top-level permissions."
+              exit 1
+            fi
+          done
