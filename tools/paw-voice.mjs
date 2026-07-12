@@ -218,24 +218,9 @@ function isValidElevenLabsKey(value) {
   return /^[A-Za-z0-9_-]{20,200}$/.test(String(value || "").trim());
 }
 
-function safeElevenLabsApiKey(state) {
+function envElevenLabsApiKey() {
   const envKey = process.env.ELEVENLABS_API_KEY?.trim();
-  if (envKey) return isValidElevenLabsKey(envKey) ? envKey : null;
-
-  const keyFile = configuredKeyFile(state);
-  if (!keyFile || !fs.existsSync(keyFile)) return null;
-
-  const stat = fs.statSync(keyFile);
-  if (!stat.isFile() || stat.size > 1024) return null;
-
-  const key = fs.readFileSync(keyFile, "utf8").trim();
-  return isValidElevenLabsKey(key) ? key : null;
-}
-
-function hasConfiguredElevenLabsKeySource(state) {
-  if (process.env.ELEVENLABS_API_KEY) return isValidElevenLabsKey(process.env.ELEVENLABS_API_KEY);
-  const keyFile = configuredKeyFile(state);
-  return Boolean(keyFile && fs.existsSync(keyFile) && fs.statSync(keyFile).isFile());
+  return envKey && isValidElevenLabsKey(envKey) ? envKey : null;
 }
 
 function publicStatus(state) {
@@ -252,26 +237,26 @@ function publicStatus(state) {
     voice_rotation_index: state.voice_rotation_index,
     audition_mode: state.audition_mode,
     last_voice: state.last_voice,
-    model: state.model,
-    api_key_configured: hasConfiguredElevenLabsKeySource(state),
-    api_key_file: configuredKeyFile(state) ? "configured" : null
+    model: state.model
   };
 }
 
 function hasElevenLabsKey() {
   const state = readState();
-  return Boolean(safeElevenLabsApiKey(state));
+  if (envElevenLabsApiKey()) return true;
+  const keyFile = configuredKeyFile(state);
+  if (!keyFile) return false;
+  try {
+    return fs.statSync(keyFile).isFile();
+  } catch {
+    return false;
+  }
 }
 
 function sagAuthArgs(state) {
   if (process.env.ELEVENLABS_API_KEY) return [];
   const keyFile = configuredKeyFile(state);
-  if (keyFile && fs.existsSync(keyFile)) return ["--api-key-file", keyFile];
-  return [];
-}
-
-function elevenLabsApiKey(state) {
-  return safeElevenLabsApiKey(state);
+  return keyFile ? ["--api-key-file", keyFile] : [];
 }
 
 function appendLog(entry) {
@@ -280,15 +265,12 @@ function appendLog(entry) {
 }
 
 async function refreshVoices() {
-  const state = readState();
-  const apiKey = elevenLabsApiKey(state);
+  const apiKey = envElevenLabsApiKey();
   if (!apiKey) {
-    console.error("Missing ElevenLabs API key. Set ELEVENLABS_API_KEY or ELEVENLABS_API_KEY_FILE.");
+    console.error("refresh-voices requires ELEVENLABS_API_KEY in the environment.");
     process.exit(5);
   }
   const response = await fetch("https://api.elevenlabs.io/v1/voices", {
-    // The local secret file contains an ElevenLabs API key, and this request sends it only to ElevenLabs.
-    // codeql[js/file-access-to-http-request]
     headers: { "xi-api-key": apiKey }
   });
   if (!response.ok) {

@@ -104,6 +104,7 @@ chmod 600 ~/.openclaw/secrets/*-api-key
 ```
 
 For safety, Paw Voice only accepts ElevenLabs key files from `~/.openclaw/secrets/`.
+The `refresh-voices` helper makes a direct ElevenLabs API request, so it requires `ELEVENLABS_API_KEY` in the environment instead of reading a key file.
 
 If you do not have ElevenLabs yet, install with macOS speech:
 
