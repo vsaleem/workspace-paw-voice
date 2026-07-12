@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">GlitterNGeek Paw Voice</title>
+  <desc id="desc">Purple, pink, and white banner for Paw Voice, an experimental macOS push-to-talk interface for OpenClaw.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2a0a4a"/>
+      <stop offset="0.45" stop-color="#7d2ae8"/>
+      <stop offset="1" stop-color="#ff4fc3"/>
+    </linearGradient>
+    <linearGradient id="spark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.5" stop-color="#ffd8f4"/>
+      <stop offset="1" stop-color="#ff7adf"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="360" rx="36" fill="url(#bg)"/>
+  <path d="M0 270 C210 190 300 330 510 250 C720 170 820 270 1200 140 L1200 360 L0 360 Z" fill="#ffffff" opacity="0.13"/>
+  <path d="M0 70 C220 140 350 40 540 105 C760 180 920 80 1200 115" fill="none" stroke="#ffffff" stroke-width="4" opacity="0.22"/>
+
+  <g filter="url(#glow)" opacity="0.95">
+    <path d="M109 78 L124 118 L166 123 L133 150 L143 192 L109 170 L75 192 L85 150 L52 123 L94 118 Z" fill="url(#spark)"/>
+    <path d="M1035 62 L1047 93 L1080 97 L1054 118 L1062 151 L1035 134 L1008 151 L1016 118 L990 97 L1023 93 Z" fill="url(#spark)" opacity="0.85"/>
+    <path d="M997 238 L1006 262 L1032 265 L1012 282 L1018 307 L997 294 L976 307 L982 282 L962 265 L988 262 Z" fill="#ffffff" opacity="0.8"/>
+  </g>
+
+  <g transform="translate(96 88)">
+    <circle cx="82" cy="92" r="70" fill="#ffffff" opacity="0.96"/>
+    <circle cx="58" cy="70" r="13" fill="#7d2ae8"/>
+    <circle cx="106" cy="70" r="13" fill="#7d2ae8"/>
+    <path d="M54 113 C70 135 95 135 111 113" fill="none" stroke="#ff4fc3" stroke-width="10" stroke-linecap="round"/>
+    <circle cx="82" cy="94" r="9" fill="#2a0a4a"/>
+    <path d="M34 48 C17 31 16 14 33 8 C51 2 62 21 58 44" fill="#ffffff"/>
+    <path d="M130 48 C147 31 148 14 131 8 C113 2 102 21 106 44" fill="#ffffff"/>
+  </g>
+
+  <text x="255" y="128" font-family="Inter, Avenir Next, Helvetica, Arial, sans-serif" font-size="34" font-weight="700" fill="#ffd8f4" letter-spacing="3">
+    GLITTERNGEEK
+  </text>
+  <text x="252" y="207" font-family="Inter, Avenir Next, Helvetica, Arial, sans-serif" font-size="82" font-weight="800" fill="#ffffff">
+    Paw Voice
+  </text>
+  <text x="258" y="257" font-family="Inter, Avenir Next, Helvetica, Arial, sans-serif" font-size="28" font-weight="600" fill="#fff5fc">
+    macOS push-to-talk for conversational OpenClaw agents
+  </text>
+
+  <g transform="translate(257 287)">
+    <rect width="172" height="38" rx="19" fill="#ffffff" opacity="0.18"/>
+    <text x="22" y="26" font-family="Inter, Avenir Next, Helvetica, Arial, sans-serif" font-size="17" font-weight="700" fill="#ffffff">memory-aware</text>
+    <rect x="192" width="147" height="38" rx="19" fill="#ffffff" opacity="0.18"/>
+    <text x="214" y="26" font-family="Inter, Avenir Next, Helvetica, Arial, sans-serif" font-size="17" font-weight="700" fill="#ffffff">action-ready</text>
+    <rect x="359" width="126" height="38" rx="19" fill="#ffffff" opacity="0.18"/>
+    <text x="381" y="26" font-family="Inter, Avenir Next, Helvetica, Arial, sans-serif" font-size="17" font-weight="700" fill="#ffffff">voice-first</text>
+  </g>
+</svg>
