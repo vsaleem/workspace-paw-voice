@@ -519,34 +519,17 @@ function run(options) {
     process.exit(2);
   }
 
-  const listenArgs = buildListenArgs(options);
-
   if (options.dryRun) {
     console.log(JSON.stringify({
       command: "node",
-      args: ["tools/paw-listen.mjs", ...listenArgs.map((arg) => arg === options.file ? "<audio-file>" : arg)],
-      mode: options.mode,
-      target: options.target,
-      session_key: options.sessionKey ? "configured" : null,
-      duration_seconds: options.duration,
-      transcription_model: "configured",
-      stt_provider: "configured",
-      stt_model: "configured",
-      agent_thinking: options.agentThinking ? "configured" : null,
-      voice_brief: options.voiceBrief,
-      voice_max_words: options.voiceMaxWords,
-      speech_mode: "configured",
-      fast_reply: options.fastReply,
-      lean_commands: options.leanCommands,
-      instant_ack: options.instantAck,
-      instant_ack_text: "configured",
-      notifications: options.notify,
-      sound_cues: options.sound,
-      lock: options.lock
+      args: ["tools/paw-listen.mjs", "<runtime-options-redacted>"],
+      redacted: true,
+      note: "Dry run hides environment-derived voice configuration."
     }, null, 2));
     return;
   }
 
+  const listenArgs = buildListenArgs(options);
   const releaseLock = acquireLock(options);
 
   let result;

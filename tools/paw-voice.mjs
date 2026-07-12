@@ -227,7 +227,8 @@ async function refreshVoices() {
     process.exit(5);
   }
   const response = await fetch("https://api.elevenlabs.io/v1/voices", {
-    // codeql[js/file-access-to-http-request]: The local secret file contains an ElevenLabs API key, and this request sends it only to ElevenLabs.
+    // The local secret file contains an ElevenLabs API key, and this request sends it only to ElevenLabs.
+    // codeql[js/file-access-to-http-request]
     headers: { "xi-api-key": apiKey }
   });
   if (!response.ok) {
