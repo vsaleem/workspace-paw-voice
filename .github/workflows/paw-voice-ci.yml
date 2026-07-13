@@ -1,0 +1,115 @@
+name: Paw Voice CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+concurrency:
+  group: paw-voice-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  node-go-package:
+    name: Node, Go, SVG, Package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: tools/paw-stt-go/go.mod
+          cache-dependency-path: tools/paw-stt-go/go.mod
+
+      - name: Install validation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libxml2-utils zsh
+
+      - name: Check JavaScript syntax
+        run: |
+          set -euo pipefail
+          for file in tools/*.mjs; do
+            node --check "$file"
+          done
+
+      - name: Check shell syntax
+        run: |
+          set -euo pipefail
+          for file in tools/*.command tools/*.sh; do
+            zsh -n "$file"
+          done
+
+      - name: Check SVG assets
+        run: xmllint --noout assets/*.svg
+
+      - name: Check Go formatting and tests
+        working-directory: tools/paw-stt-go
+        run: |
+          set -euo pipefail
+          test -z "$(gofmt -l .)"
+          go test ./...
+
+      - name: Build source release archive
+        run: node tools/package-paw-voice-release.mjs
+
+      - name: Validate release archive contents
+        run: |
+          set -euo pipefail
+          tar -tzf dist/paw-voice-v1.tar.gz | sort > /tmp/paw-voice-archive.txt
+          grep -qx 'README.md' /tmp/paw-voice-archive.txt
+          grep -qx 'assets/gng-paw-voice-logo.svg' /tmp/paw-voice-archive.txt
+          grep -qx 'tools/install-paw-voice.mjs' /tmp/paw-voice-archive.txt
+          if grep -E '(^|/)(\.openclaw|memory|dist)(/|$)|\.app/|paw-stt-go/paw-stt-go$' /tmp/paw-voice-archive.txt; then
+            echo "::error::Release archive contains generated/runtime/private files."
+            exit 1
+          fi
+
+      - name: Upload release archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: paw-voice-v1-source
+          path: dist/paw-voice-v1.tar.gz
+          if-no-files-found: error
+
+  macos-native:
+    name: macOS Native Build
+    runs-on: macos-14
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Check native Swift sources
+        run: |
+          set -euo pipefail
+          swiftc -typecheck tools/paw-push-to-talk-app.swift -framework AppKit -framework AVFoundation
+          swiftc -typecheck tools/paw-push-to-talk-hotkey.swift -framework AppKit -framework Carbon
+
+      - name: Build native recorder app
+        run: node tools/build-paw-push-to-talk-app.mjs
+
+      - name: Check installer help
+        run: node tools/install-paw-voice.mjs --help

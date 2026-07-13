@@ -1,0 +1,140 @@
+name: Paw Voice Safety
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "17 11 * * 1"
+
+permissions:
+  contents: read
+  pull-requests: read
+  security-events: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+concurrency:
+  group: paw-voice-safety-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  privacy-and-secret-guard:
+    name: Privacy and Secret Guard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Disallow tracked private/runtime files
+        run: |
+          set -euo pipefail
+          git ls-files > /tmp/tracked-files.txt
+          if grep -E '(^|/)(MEMORY\.md|memory/|SLACK\.md|HEARTBEAT\.md|AGENTS\.md|SOUL\.md|USER\.md|TOOLS\.md|IDENTITY\.md|openclaw-workspace-state\.json|\.openclaw/|dist/|secrets/)' /tmp/tracked-files.txt; then
+            echo "::error::Private, runtime, generated, or local workspace files are tracked."
+            exit 1
+          fi
+          if grep -E '(\.app/|\.wav$|\.aiff$|\.mp3$|\.m4a$|tools/paw-stt-go/paw-stt-go$)' /tmp/tracked-files.txt; then
+            echo "::error::Generated app/audio/binary artifact is tracked."
+            exit 1
+          fi
+
+      - name: Scan tracked files for local paths and obvious secret material
+        run: |
+          set -euo pipefail
+          git ls-files -z > /tmp/tracked-files.z
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import pathlib
+          import re
+          import sys
+
+          files = [pathlib.Path(item.decode()) for item in pathlib.Path("/tmp/tracked-files.z").read_bytes().split(b"\0") if item]
+          patterns = [
+              re.compile("/Users/" + "vic"),
+              re.compile(r"/Users/[^/\s]+/\.openclaw/secrets"),
+              re.compile(r"sk-[A-Za-z0-9_-]{20,}"),
+              re.compile(r"github_pat_[A-Za-z0-9_]{20,}"),
+              re.compile(r"ghp_[A-Za-z0-9]{20,}"),
+              re.compile(r"xox[baprs]-[A-Za-z0-9-]{20,}"),
+              re.compile(r"ELEVENLABS_API_KEY=[\"'][^.\"']"),
+              re.compile(r"DEEPGRAM_API_KEY=[\"'][^.\"']"),
+              re.compile(r"OPENAI_API_KEY=[\"'][^.\"']"),
+          ]
+          failures: list[str] = []
+          for file in files:
+              try:
+                  text = file.read_text(encoding="utf-8")
+              except UnicodeDecodeError:
+                  continue
+              for index, line in enumerate(text.splitlines(), start=1):
+                  if any(pattern.search(line) for pattern in patterns):
+                      failures.append(f"{file}:{index}:{line}")
+          if failures:
+              print("Potential secret or machine-local path found in tracked files:")
+              print("\n".join(failures))
+              sys.exit(1)
+          PY
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+
+      - name: Verify package artifact stays clean
+        run: |
+          set -euo pipefail
+          node tools/package-paw-voice-release.mjs
+          mkdir -p /tmp/paw-voice-release
+          tar -xzf dist/paw-voice-v1.tar.gz -C /tmp/paw-voice-release
+          if find /tmp/paw-voice-release -type f \( -name '*.app' -o -name '*.wav' -o -name '*.aiff' -o -name '*-api-key' \) | grep .; then
+            echo "::error::Release archive contains generated audio/app or key-like files."
+            exit 1
+          fi
+
+  markdown-link-safety:
+    name: README Link and Badge Safety
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Check README asset references
+        run: |
+          set -euo pipefail
+          grep -q 'assets/gng-paw-voice-logo.svg' README.md
+          test -f assets/gng-paw-voice-logo.svg
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import pathlib
+          import re
+          import sys
+
+          text = pathlib.Path("README.md").read_text(encoding="utf-8")
+          patterns = [
+              re.compile(r"file://"),
+              re.compile("/Users/" + "vic"),
+              re.compile(r"localhost:[0-9]+"),
+          ]
+          failures = [
+              f"README.md:{index}:{line}"
+              for index, line in enumerate(text.splitlines(), start=1)
+              if any(pattern.search(line) for pattern in patterns)
+          ]
+          if failures:
+              print("README contains local-only links:")
+              print("\n".join(failures))
+              sys.exit(1)
+          PY

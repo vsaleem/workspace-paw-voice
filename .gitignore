@@ -1,0 +1,41 @@
+# Paw memory lives in Obsidian, not GitHub.
+MEMORY.md
+memory/
+SLACK.md
+GNG_BUSINESS_MANAGER_AUDIT.md
+HEARTBEAT.md
+AGENTS.md
+SOUL.md
+USER.md
+TOOLS.md
+IDENTITY.md
+openclaw-workspace-state.json
+
+# Secrets and local environment
+.env
+.env.*
+secrets/
+*.key
+*-api-key
+
+# Runtime/cache/state
+.openclaw/
+*.sqlite
+*.sqlite-*
+*.log
+*.tmp
+*.wav
+*.aiff
+*.mp3
+*.m4a
+*.app/
+tools/Paw Push To Talk Native.app/
+tools/Paw Push To Talk.app/
+tools/paw-stt-go/paw-stt-go
+
+# Obsidian-derived exports or mirrors should stay local unless Vic approves.
+obsidian-export/
+memory-export/
+memory-cache/
+active-state/
+dist/
